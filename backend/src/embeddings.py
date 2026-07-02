@@ -117,7 +117,7 @@ def load_collection():
     """
 
     client = chromadb.PersistentClient(
-        path="../vector_db_demo"
+        path="../vector_dbdemo"
     )
 
 
