@@ -19,9 +19,7 @@ build/
 data/candidates.jsonl
 backend/data/candidates.jsonl
 
-# Generated outputs
-vector_db/
-outputs/
+
 
 # AI Recruiter generated files
 vector_db/
