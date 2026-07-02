@@ -14,7 +14,7 @@ from src.skill_gap_analyzer import analyze_skill_gap
 from src.submission_generator import generate_submission
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_PATH = PROJECT_ROOT / "data" / "candidates_demo.jsonl"
 OUTPUT_PATH = PROJECT_ROOT / "outputs" / "ranked_candidates.csv"
 
