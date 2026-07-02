@@ -1,78 +1,77 @@
-from threading import Lock
-import traceback
+from functools import lru_cache
 
-from fastapi import FastAPI
-from fastapi.encoders import jsonable_encoder
-from fastapi import HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from starlette.concurrency import run_in_threadpool
+import chromadb
+from rank_bm25 import BM25Okapi
+from sentence_transformers import SentenceTransformer
 
+from src.skill_matcher import normalize_text
+from pathlib import Path
 
 
+MODEL_NAME = "all-MiniLM-L6-v2"
 
-pipeline_lock = Lock()
+
+@lru_cache(maxsize=1)
+def _embedding_model():
+    return SentenceTransformer(MODEL_NAME)
 
 
-class CandidateSearchRequest(BaseModel):
-    job_description: str = Field(
-        ...,
-        min_length=20,
-        description="The complete job description to analyze.",
+def _tokenize(value):
+    return normalize_text(value).split()
+
+
+def semantic_search(query, top_k=20):
+    model = _embedding_model()
+    query_embedding = model.encode(query)
+
+    VECTOR_DB_PATH = (
+        Path(__file__).resolve().parent.parent.parent
+        / "vector_dbdemo"
+    )
+
+    client = chromadb.PersistentClient(
+        path=str(VECTOR_DB_PATH)
+    )
+    collection = client.get_collection(
+        name="candidates"
+    )
+    result_count = min(
+        max(int(top_k), 1),
+        collection.count(),
+    )
+
+    if result_count <= 0:
+        return {
+            "ids": [[]],
+            "documents": [[]],
+            "metadatas": [[]],
+            "distances": [[]],
+        }
+
+    return collection.query(
+        query_embeddings=[query_embedding.tolist()],
+        n_results=result_count,
     )
 
 
-app = FastAPI(
-    title="AI Recruiter API",
-    version="1.0.0",
-)
+def bm25_search(query, documents, top_k=20):
+    if not documents:
+        return []
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://ai-recruiter-live.vercel.app"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    tokenized_docs = [
+        _tokenize(document)
+        for document in documents
+    ]
+    tokenized_query = _tokenize(query)
 
+    if not tokenized_query:
+        return []
 
-def _run_pipeline(job_description):
-    with pipeline_lock:
-        return run_recruitment_pipeline(
-            job_description
-        )
+    bm25 = BM25Okapi(tokenized_docs)
+    scores = bm25.get_scores(tokenized_query)
 
-
-@app.get("/")
-def root():
-    return {
-        "message": "AI Recruiter API Running"
-    }
-
-
-@app.post("/search-candidates")
-async def search_candidates(
-    request: CandidateSearchRequest,
-):
-    try:
-        result = await run_in_threadpool(
-            _run_pipeline,
-            request.job_description.strip(),
-        )
-
-        return jsonable_encoder(result)
-
-    except Exception as error:
-        print("\n========== PIPELINE ERROR ==========")
-        traceback.print_exc()
-        print("ERROR:", repr(error))
-        print("====================================\n")
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(error)
-        )
+    return sorted(
+        range(len(scores)),
+        key=lambda index: scores[index],
+        reverse=True,
+    )[:top_k]
