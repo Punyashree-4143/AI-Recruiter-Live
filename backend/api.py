@@ -67,7 +67,4 @@ async def search_candidates(
     except Exception as error:
         traceback.print_exc()
         print("ERROR:", repr(error))
-        raise HTTPException(
-            status_code=500,
-            detail=str(error),
-        )
+        raise
