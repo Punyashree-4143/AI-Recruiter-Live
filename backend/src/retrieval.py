@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from search_candidates import run_recruitment_pipeline
+
 
 
 pipeline_lock = Lock()
