@@ -24,7 +24,7 @@ def create_vector_store(
     print("Connecting to ChromaDB...")
 
     client = chromadb.PersistentClient(
-        path="../vector_db"
+        path="../vector_dbdemo"
     )
 
     # Delete old collection
@@ -117,7 +117,7 @@ def load_collection():
     """
 
     client = chromadb.PersistentClient(
-        path="../vector_db"
+        path="../vector_db_demo"
     )
 
 

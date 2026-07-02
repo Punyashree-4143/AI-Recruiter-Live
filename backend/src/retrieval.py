@@ -24,7 +24,7 @@ def semantic_search(query, top_k=20):
     query_embedding = model.encode(query)
 
     client = chromadb.PersistentClient(
-        path="../vector_db"
+        path="../vector_db_demo"
     )
     collection = client.get_collection(
         name="candidates"
