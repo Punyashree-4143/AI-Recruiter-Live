@@ -15,9 +15,13 @@ node_modules/
 # Build files
 dist/
 build/
-
 # Large datasets
 data/candidates.jsonl
+backend/data/candidates.jsonl
+
+# Generated outputs
+vector_db/
+outputs/
 
 # AI Recruiter generated files
 vector_db/
