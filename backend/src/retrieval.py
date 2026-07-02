@@ -25,7 +25,7 @@ def semantic_search(query, top_k=20):
     query_embedding = model.encode(query)
 
     VECTOR_DB_PATH = (
-        Path(__file__).resolve().parent.parent.parent
+        Path(__file__).resolve().parent.parent
         / "vector_dbdemo"
     )
 

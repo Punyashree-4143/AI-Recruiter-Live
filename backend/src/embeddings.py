@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import chromadb
 from sentence_transformers import SentenceTransformer
 
@@ -23,8 +25,13 @@ def create_vector_store(
 
     print("Connecting to ChromaDB...")
 
+    VECTOR_DB_PATH = (
+        Path(__file__).resolve().parent.parent
+        / "vector_dbdemo"
+    )
+
     client = chromadb.PersistentClient(
-        path="../vector_dbdemo"
+        path=str(VECTOR_DB_PATH)
     )
 
     # Delete old collection
@@ -112,14 +119,9 @@ def create_vector_store(
 
 
 def load_collection():
-    """
-    Load existing ChromaDB collection.
-    """
-
     client = chromadb.PersistentClient(
-        path="../vector_dbdemo"
+        path=str(VECTOR_DB_PATH)
     )
-
 
     collection = client.get_collection(
         name="candidates"

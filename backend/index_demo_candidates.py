@@ -7,7 +7,7 @@ def main():
     print("Loading demo candidates...")
 
     documents, metadata = load_and_prepare_data(
-        "../data/candidates_demo.jsonl"
+        "data/candidates_demo.jsonl"
     )
 
     print(
