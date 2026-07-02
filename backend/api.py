@@ -1,4 +1,5 @@
 from threading import Lock
+import traceback
 
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
@@ -31,7 +32,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://ai-recruiter-live.vercel.app/",
+        "https://ai-recruiter-live.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -64,10 +65,9 @@ async def search_candidates(
         )
         return jsonable_encoder(result)
     except Exception as error:
+        traceback.print_exc()
+        print("ERROR:", repr(error))
         raise HTTPException(
             status_code=500,
-            detail=(
-                "The recruitment pipeline could not "
-                "complete."
-            ),
-        ) from error
+            detail=str(error),
+        )
