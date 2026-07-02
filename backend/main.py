@@ -116,7 +116,7 @@ def main():
     print("\nFINAL RECRUITER RANKING\n")
 
     for rank, candidate in enumerate(
-        ranked_candidates[:10],
+        ranked_candidates[:5],
         start=1
     ):
 
