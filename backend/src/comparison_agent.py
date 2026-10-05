@@ -75,7 +75,7 @@ Format:
     try:
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {
                     "role": "user",
@@ -93,16 +93,31 @@ Format:
             .strip()
         )
 
-        match = re.search(
-            r"\{.*\}",
-            content,
-            re.DOTALL
-        )
+        print("\nGROQ COMPARISON RESPONSE:")
+        print(content)
 
-        if match:
+        # First try parsing the complete response
+        try:
+            return json.loads(content)
 
-            return json.loads(
-                match.group()
+        except json.JSONDecodeError:
+
+            # If Groq returned JSON inside additional text,
+            # extract the JSON object.
+            match = re.search(
+                r"\{.*\}",
+                content,
+                re.DOTALL
+            )
+
+            if match:
+
+                return json.loads(
+                    match.group()
+                )
+
+            raise ValueError(
+                "Could not extract valid JSON from Groq comparison response."
             )
 
     except Exception as e:

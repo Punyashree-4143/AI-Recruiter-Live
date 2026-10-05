@@ -57,13 +57,18 @@ TOP CANDIDATES:
 
 Select the best candidate.
 
-Return ONLY valid JSON.
+IMPORTANT:
+- Return ONLY valid JSON.
+- "confidence" MUST be a number from 0 to 100.
+- Do NOT write words such as "nine", "ninety", or "high" for confidence.
+- Do NOT use markdown.
+- Do NOT add any text before or after the JSON.
 
-Format:
+Return exactly this structure:
 
 {{
-    "recommended_candidate": "",
-    "confidence": 0,
+    "recommended_candidate": "CAND_XXXXXXX",
+    "confidence": 90,
     "strengths": [],
     "risks": [],
     "final_decision": ""
@@ -73,7 +78,7 @@ Format:
     try:
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {
                     "role": "user",
@@ -91,17 +96,86 @@ Format:
             .strip()
         )
 
-        match = re.search(
-            r"\{.*\}",
-            content,
-            re.DOTALL
-        )
+        print("\nGROQ HIRING RESPONSE:")
+        print(content)
 
-        if match:
+        # -------------------------------------------------
+        # Try normal JSON parsing first
+        # -------------------------------------------------
 
-            return json.loads(
-                match.group()
+        try:
+
+            result = json.loads(content)
+
+        except json.JSONDecodeError:
+
+            # -------------------------------------------------
+            # Extract JSON if model added surrounding text
+            # -------------------------------------------------
+
+            match = re.search(
+                r"\{.*\}",
+                content,
+                re.DOTALL
             )
+
+            if not match:
+                raise ValueError(
+                    "Could not extract JSON from hiring response."
+                )
+
+            json_text = match.group()
+
+            # -------------------------------------------------
+            # Repair common invalid confidence values
+            # -------------------------------------------------
+
+            json_text = re.sub(
+                r'"confidence"\s*:\s*0\.\s*nine\b',
+                '"confidence": 90',
+                json_text,
+                flags=re.IGNORECASE
+            )
+
+            json_text = re.sub(
+                r'"confidence"\s*:\s*0\.\s*ninety\b',
+                '"confidence": 90',
+                json_text,
+                flags=re.IGNORECASE
+            )
+
+            json_text = re.sub(
+                r'"confidence"\s*:\s*nine\b',
+                '"confidence": 90',
+                json_text,
+                flags=re.IGNORECASE
+            )
+
+            result = json.loads(json_text)
+
+        # -------------------------------------------------
+        # Validate confidence
+        # -------------------------------------------------
+
+        confidence = result.get("confidence", 0)
+
+        if isinstance(confidence, str):
+
+            confidence_match = re.search(
+                r"\d+(?:\.\d+)?",
+                confidence
+            )
+
+            if confidence_match:
+                confidence = float(
+                    confidence_match.group()
+                )
+            else:
+                confidence = 0
+
+        result["confidence"] = confidence
+
+        return result
 
     except Exception as e:
 
