@@ -3,14 +3,10 @@ import random
 from collections import defaultdict
 from pathlib import Path
 
-# -----------------------------
-# Paths
-# -----------------------------
-
 BASE_DIR = Path(__file__).resolve().parent
 
-INPUT_FILE = BASE_DIR / "data" / "candidates.jsonl"
-OUTPUT_FILE = BASE_DIR / "data" / "candidates_demo.jsonl"
+INPUT_FILE = BASE_DIR / "data" / "candidates_demo.jsonl"
+OUTPUT_FILE = BASE_DIR / "data" / "candidates_demo_500.jsonl"
 
 random.seed(42)
 
@@ -18,14 +14,9 @@ groups = defaultdict(list)
 
 print(f"Reading dataset from:\n{INPUT_FILE}\n")
 
-# -----------------------------
-# Read candidates
-# -----------------------------
-
 with open(INPUT_FILE, "r", encoding="utf-8") as f:
 
     for line in f:
-
         line = line.strip()
 
         if not line:
@@ -43,13 +34,8 @@ with open(INPUT_FILE, "r", encoding="utf-8") as f:
 
 print(f"Found {len(groups)} unique job titles.")
 
-# -----------------------------
-# Candidates to keep per role
-# -----------------------------
-
+# Number to select from each role
 role_limits = {
-
-    # Technical / software roles
     "Backend Engineer": 35,
     "Data Engineer": 35,
     "QA Engineer": 35,
@@ -60,17 +46,14 @@ role_limits = {
     "Full Stack Developer": 35,
     "Java Developer": 35,
 
-    # These roles have fewer candidates in the dataset
     "Recommendation Systems Engineer": 26,
     "Cloud Engineer": 24,
 
-    # Other roles
     "Operations Manager": 14,
     "Customer Support": 14,
     "Marketing Manager": 14,
     "Business Analyst": 14,
     "Project Manager": 14,
-
     "Accountant": 13,
     "Civil Engineer": 13,
     "Mechanical Engineer": 13,
@@ -78,25 +61,17 @@ role_limits = {
     "Graphic Designer": 13,
 }
 
-# -----------------------------
-# Create balanced dataset
-# -----------------------------
-
-demo_candidates = []
+filtered_candidates = []
 
 for title, limit in role_limits.items():
 
     candidates = groups.get(title, [])
 
-    if not candidates:
-        print(f"WARNING: No candidates found for '{title}'")
-        continue
-
     random.shuffle(candidates)
 
     selected = candidates[:limit]
 
-    demo_candidates.extend(selected)
+    filtered_candidates.extend(selected)
 
     print(
         f"{title:<35} "
@@ -104,81 +79,33 @@ for title, limit in role_limits.items():
         f"Selected: {len(selected)}"
     )
 
-# -----------------------------
-# Safety check
-# -----------------------------
-
-selected_ids = {
-    candidate["candidate_id"]
-    for candidate in demo_candidates
-}
-
-# Remove accidental duplicates
+# Remove duplicate candidate IDs
+seen_ids = set()
 unique_candidates = []
 
-seen_ids = set()
-
-for candidate in demo_candidates:
+for candidate in filtered_candidates:
 
     candidate_id = candidate["candidate_id"]
 
     if candidate_id not in seen_ids:
-
         seen_ids.add(candidate_id)
         unique_candidates.append(candidate)
 
-demo_candidates = unique_candidates
+filtered_candidates = unique_candidates
 
-# -----------------------------
 # Shuffle final dataset
-# -----------------------------
+random.shuffle(filtered_candidates)
 
-random.shuffle(demo_candidates)
-
-# -----------------------------
-# Save demo dataset
-# -----------------------------
-
+# Save
 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
 
-    for candidate in demo_candidates:
-
-        f.write(
-            json.dumps(
-                candidate,
-                ensure_ascii=False
-            )
-        )
-
+    for candidate in filtered_candidates:
+        f.write(json.dumps(candidate, ensure_ascii=False))
         f.write("\n")
 
-# -----------------------------
-# Final statistics
-# -----------------------------
-
-final_groups = defaultdict(int)
-
-for candidate in demo_candidates:
-
-    title = (
-        candidate.get("profile", {})
-        .get("current_title", "Unknown")
-        .strip()
-    )
-
-    final_groups[title] += 1
-
 print("\n===================================")
-print("Created demo dataset successfully!")
+print("Filtering completed!")
 print("===================================")
-
-print(f"Total Candidates : {len(demo_candidates)}")
+print(f"Total Candidates : {len(filtered_candidates)}")
 print(f"Saved to         : {OUTPUT_FILE}")
-
-print("\nFinal distribution:")
-
-for title, count in sorted(final_groups.items()):
-
-    print(f"{title:<35} {count}")
-
 print("===================================")
