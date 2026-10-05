@@ -1,34 +1,20 @@
 from pathlib import Path
 
 import chromadb
-from sentence_transformers import SentenceTransformer
 
 
-MODEL_NAME = "all-MiniLM-L6-v2"
-BATCH_SIZE = 1000
+VECTOR_DB_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "vector_dbdemo"
+)
 
 
 def create_vector_store(
     documents,
     metadata
 ):
-    """
-    Create ChromaDB vector store using
-    batch processing.
-    """
 
-    print("\nLoading embedding model...")
-
-    model = SentenceTransformer(
-        MODEL_NAME
-    )
-
-    print("Connecting to ChromaDB...")
-
-    VECTOR_DB_PATH = (
-        Path(__file__).resolve().parent.parent
-        / "vector_dbdemo"
-    )
+    print("\nConnecting to ChromaDB...")
 
     client = chromadb.PersistentClient(
         path=str(VECTOR_DB_PATH)
@@ -61,6 +47,8 @@ def create_vector_store(
         f"{total_docs} candidates..."
     )
 
+    BATCH_SIZE = 100
+
     for start_idx in range(
         0,
         total_docs,
@@ -87,11 +75,6 @@ def create_vector_store(
             f"{start_idx} - {end_idx}"
         )
 
-        embeddings = model.encode(
-            batch_documents,
-            show_progress_bar=False
-        )
-
         ids = [
             item["candidate_id"]
             for item in batch_metadata
@@ -100,8 +83,7 @@ def create_vector_store(
         collection.add(
             ids=ids,
             documents=batch_documents,
-            metadatas=batch_metadata,
-            embeddings=embeddings.tolist()
+            metadatas=batch_metadata
         )
 
         print(
@@ -119,6 +101,7 @@ def create_vector_store(
 
 
 def load_collection():
+
     client = chromadb.PersistentClient(
         path=str(VECTOR_DB_PATH)
     )
